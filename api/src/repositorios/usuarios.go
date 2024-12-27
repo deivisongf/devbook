@@ -67,3 +67,48 @@ func (repositorio usuarios) Buscar(nomeOuNick string) ([]modelos.Usuario, error)
 
 	return usuarios, nil
 }
+
+func (repositorio usuarios) BuscarPorId(ID uint64) (modelos.Usuario, error) {
+	linhas, erro := repositorio.db.Query(
+		"select id, nome, nick, email, criadoEm from usuarios where id = ?",
+		ID,
+	)
+	if erro != nil {
+		return modelos.Usuario{}, erro
+	}
+	defer linhas.Close()
+
+	var usuario modelos.Usuario
+
+	if linhas.Next() {
+		if erro = linhas.Scan(
+			&usuario.ID,
+			&usuario.Nome,
+			&usuario.Nick,
+			&usuario.Email,
+			&usuario.CriadoEm,
+		); erro != nil {
+			return modelos.Usuario{}, erro
+		}
+	}
+
+	return usuario, nil
+}
+
+func (repositorio usuarios) Atualizar(ID uint64, usuario modelos.Usuario) error {
+	statement, erro := repositorio.db.Prepare(
+		"update usuarios set nome=?, nick=?, email=? where id=?",
+	)
+
+	if erro != nil {
+		return erro
+	}
+
+	defer statement.Close()
+
+	if _, erro = statement.Exec(usuario.Nome, usuario.Nick, usuario.Email, ID); erro != nil {
+		return erro
+	}
+
+	return nil
+}
